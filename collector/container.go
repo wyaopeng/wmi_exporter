@@ -168,7 +168,7 @@ func (c *ContainerMetricsCollector) collect(ch chan<- prometheus.Metric) (*prome
 	}
 
 	for _, containerDetails := range containers {
-		containerId := containerDetails.ID
+		containerId := containerDetails.Names
 
 		container, err := hcsshim.OpenContainer(containerId)
 		if container != nil {
@@ -185,7 +185,7 @@ func (c *ContainerMetricsCollector) collect(ch chan<- prometheus.Metric) (*prome
 			continue
 		}
 		// HCS V1 is for docker runtime. Add the docker:// prefix on container_id
-		containerId = "docker://" + containerId
+		//containerId = "docker://" + containerId
 
 		ch <- prometheus.MustNewConstMetric(
 			c.ContainerAvailable,
