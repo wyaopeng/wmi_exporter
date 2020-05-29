@@ -4,8 +4,7 @@ package collector
 
 import (
     "context"
-    "io/ioutil"
-    "github.com/bitly/go-simplejson"
+	"github.com/docker/docker/api/types"
     "github.com/docker/docker/client"
 	"github.com/Microsoft/hcsshim"
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,22 +15,6 @@ func init() {
 	registerCollector("container", NewContainerMetricsCollector)
 }
 
-func ContainerStats(ID string) string {
-    cli, err := client.NewClient("tcp://127.0.0.1:2376", "v1.39", nil, nil)
-	if err != nil {
-		log.Error(err)
-	}
-    images, err := cli.ContainerStats(context.Background(), ID[:10],false)
-	if err != nil {
-		log.Error(err)
-	}
-    s,_ := ioutil.ReadAll(images.Body)
-    cnnn := string(s)
-    ss_json, _ := simplejson.NewJson([]byte(cnnn))
-    ss_name,err := ss_json.Get("name").String()
-    //fmt.Printf(" %s\n",ss_name[1:])
-    return ss_name[1:]
-}
 // A ContainerMetricsCollector is a Prometheus collector for containers metrics
 type ContainerMetricsCollector struct {
 	// Presence
@@ -186,10 +169,21 @@ func (c *ContainerMetricsCollector) collect(ch chan<- prometheus.Metric) (*prome
 	if count == 0 {
 		return nil, nil
 	}
+    cli, err := client.NewClient("tcp://127.0.0.1:2376", "v1.39", nil, nil)
+	if err != nil {
+		log.Error(err)
+	}
+	containers1, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	var ss_name map[string]string
+	ss_name =  make(map[string]string)
+	for _, container1 := range containers1 {
+        i := container1.Names[0]
+		ss_name [container1.ID[:10]] = i[1:]
+     }
 
 	for _, containerDetails := range containers {
 		containerId := containerDetails.ID
-		containerName := ContainerStats(containerId)
+		containerName := ss_name[containerId[:10]]
 
 		container, err := hcsshim.OpenContainer(containerId)
 		if container != nil {
