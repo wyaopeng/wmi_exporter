@@ -3,21 +3,21 @@
 package collector
 
 import (
-        "context"
-        "fmt"
-        "io/ioutil"
-        "github.com/bitly/go-simplejson"
-        "github.com/docker/docker/client"
+    "context"
+    "io/ioutil"
+    "github.com/bitly/go-simplejson"
+    "github.com/docker/docker/client"
 	"github.com/Microsoft/hcsshim"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 )
 
 func init() {
-	Factories["container"] = NewContainerMetricsCollector
+	registerCollector("container", NewContainerMetricsCollector)
 }
+
 func ContainerStats(ID string) string {
-    cli, err := client.NewClient("tcp://127.0.0.1:2375", "v1.39", nil, nil)
+    cli, err := client.NewClient("tcp://127.0.0.1:2376", "v1.39", nil, nil)
 	if err != nil {
 		log.Error(err)
 	}
@@ -32,7 +32,6 @@ func ContainerStats(ID string) string {
     //fmt.Printf(" %s\n",ss_name[1:])
     return ss_name[1:]
 }
-
 // A ContainerMetricsCollector is a Prometheus collector for containers metrics
 type ContainerMetricsCollector struct {
 	// Presence
@@ -152,7 +151,7 @@ func NewContainerMetricsCollector() (Collector, error) {
 
 // Collect sends the metric values for each metric
 // to the provided prometheus Metric channel.
-func (c *ContainerMetricsCollector) Collect(ch chan<- prometheus.Metric) error {
+func (c *ContainerMetricsCollector) Collect(ctx *ScrapeContext, ch chan<- prometheus.Metric) error {
 	if desc, err := c.collect(ch); err != nil {
 		log.Error("failed collecting ContainerMetricsCollector metrics:", desc, err)
 		return err
